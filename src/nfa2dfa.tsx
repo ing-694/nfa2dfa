@@ -1,7 +1,7 @@
 type State = string;
 type Symbol = string;
 
-export interface Transition {
+export interface NfaTransition {
   state: State;
   symbol: Symbol;
   nextState: State;
@@ -10,21 +10,27 @@ export interface Transition {
 export interface NFA {
   states: Set<State>;
   alphabet: Set<Symbol>;
-  transitions: Array<Transition>;
+  transitions: Array<NfaTransition>;
   startState: State;
   acceptStates: Set<State>;
+}
+
+export interface DfaTransition {
+  state: Set<State>;
+  symbol: Symbol;
+  nextState: Set<State>;
 }
 
 export interface DFA {
   states: Set<State>;
   alphabet: Set<Symbol>;
-  transitions: Map<State, Map<Symbol, State>>;
+  transitions: Array<DfaTransition>;
   startState: State;
   acceptStates: Set<State>;
 }
 
 // ε-闭包计算函数，接收一个状态和转换列表，返回通过 ε-转换可以到达的所有状态
-function epsilonClosure(state: State, transitions: Array<Transition>): Set<State> {
+function epsilonClosure(state: State, transitions: Array<NfaTransition>): Set<State> {
   // 用来保存已经找到的状态
   let closure = new Set<State>();
   // 使用一个栈来进行深度优先搜索
@@ -56,35 +62,38 @@ function epsilonClosure(state: State, transitions: Array<Transition>): Set<State
 export function nfaToDfa(nfa: NFA): DFA {
   // 初始化 DFA 的状态、转换和接受状态
   let dfaStates = new Set<State>();
-  let dfaTransitions = new Map<State, Map<Symbol, State>>();
+  let dfaTransitions = new Array<DfaTransition>();
   let dfaAcceptStates = new Set<State>();
 
   // 计算 NFA 起始状态的 ε-闭包并将其作为 DFA 的起始状态
-  // console.log(epsilonClosure(nfa.startState, nfa.transitions));
-  let startState = Array.from(epsilonClosure(nfa.startState, nfa.transitions)).join(',');
+  let startStateStr = Array.from(epsilonClosure(nfa.startState, nfa.transitions)).join(',');
+  console.log("NFA 起始状态的 ε-闭包：", startStateStr);
 
-  // 创建一个队列来保存未处理的 NFA 状态集，开始时只包含 DFA 的起始状态
-  let queue: Array<Set<State>> = [new Set(startState.split(','))];
+  // 创建一个队列来保存未处理的 NFA 状态集，每一个 NFA 状态集都对应着一个 DFA 状态
+  // 开始时只包含 DFA 的起始状态
+  let queue: Array<Set<State>> = [new Set(startStateStr.split(','))];
 
   while (queue.length > 0) {
     // 从队列中取出一个 NFA 状态集
     let nfaStateSet = queue.shift();
+
+    console.log("当前处理的 NFA 状态集（DFA 状态）：", Array.from(nfaStateSet!).join(','));
 
     // 如果队列为空则继续下一轮循环
     if (!nfaStateSet) {
       continue;
     }
 
-    // 将 NFA 状态集转化为字符串形式作为 DFA 的一个状态
-    let dfaState = Array.from(nfaStateSet).join(',');
+    // 将 NFA 状态集转化为字符串形式，作为 DFA 的一个状态
+    let dfaStateStr = Array.from(nfaStateSet).join(',');
 
     // 如果 NFA 状态集中包含 NFA 的接受状态，那么这个 DFA 状态也是接受状态
     if (Array.from(nfaStateSet).some(state => nfa.acceptStates.has(state))) {
-      dfaAcceptStates.add(dfaState);
+      dfaAcceptStates.add(dfaStateStr);
     }
 
-    // 将新的 DFA 状态添加到 DFA 的状态集中
-    dfaStates.add(dfaState);
+    // 将新的 DFA 状态字符串添加到 DFA 的状态集中
+    dfaStates.add(dfaStateStr);
 
     // 对于 NFA 的每一个输入符号
     for (let symbol of nfa.alphabet) {
@@ -94,7 +103,7 @@ export function nfaToDfa(nfa: NFA): DFA {
       // 初始化下一个 NFA 状态集
       let nextStateSet = new Set<State>();
 
-      // 对于当前 NFA 状态集中的每一个状态
+      // 对于当前 NFA 状态集（即 DFA 状态）中的每一个状态
       for (let state of nfaStateSet) {
         // 找出所有通过当前符号可以从当前状态到达的状态
         let transitions = nfa.transitions.filter(t => t.state === state && t.symbol === symbol);
@@ -107,18 +116,27 @@ export function nfaToDfa(nfa: NFA): DFA {
         }
       }
 
-      // 将下一个 NFA 状态集转化为字符串形式作为 DFA 的一个状态
-      let dfaNextState = Array.from(nextStateSet).join(',');
+      // 将下一个 NFA 状态集转化为字符串形式作为 DFA 的一个新状态
+      let dfaNextStateStr = Array.from(nextStateSet).join(',');
+
+      console.log("当前处理的 NFA 状态集通过符号 " + symbol + " 转换到的 NFA 状态集：", dfaNextStateStr);
 
       // 如果这个新的 DFA 状态非空且还没有被处理过，那么将其加入到队列中
-      if (dfaNextState !== '' && !dfaStates.has(dfaNextState)) {
+      if (dfaNextStateStr !== '' 
+          && !dfaStates.has(dfaNextStateStr)
+          && !queue.some(s => Array.from(s).join(',') === dfaNextStateStr)) {
         queue.push(nextStateSet);
+        console.log("将"+dfaNextStateStr+"加入到队列中");
       }
 
       // 添加从当前 DFA 状态出发，通过当前符号到达新的 DFA 状态的转移
-      let dfaTransition = dfaTransitions.get(dfaState) || new Map<Symbol, State>();
-      dfaTransition.set(symbol, dfaNextState);
-      dfaTransitions.set(dfaState, dfaTransition);
+      if (dfaNextStateStr !== '' && !dfaTransitions.some(t => t.state === nfaStateSet && t.symbol === symbol)){
+        dfaTransitions.push({
+          state: nfaStateSet,
+          symbol: symbol,
+          nextState: nextStateSet
+        });
+      }
     }
   }
 
@@ -128,7 +146,7 @@ export function nfaToDfa(nfa: NFA): DFA {
     states: dfaStates,
     alphabet: nfa.alphabet,
     transitions: dfaTransitions,
-    startState: startState,
+    startState: startStateStr,
     acceptStates: dfaAcceptStates
   };
 }

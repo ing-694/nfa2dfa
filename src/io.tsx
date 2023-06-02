@@ -87,18 +87,10 @@ export const DFAOutput: React.FC<DFAOutputProps> = ({ dfa }) => {
                 <div className="flex flex-col space-y-2">
                     <h3 className="text-lg font-bold">Transitions:</h3>
                     <ul className="flex flex-col justify-center items-center">
-                        {dfa ? Array.from(dfa.transitions).map(([state, transitions]) => (
-                            <li key={state} className="flex">
-                            <span className="mr-2">{state}:</span>
-                            <ul>
-                              {Array.from(transitions).map(([symbol, nextState]) => (
-                                <li key={symbol} className="ml-4">
-                                  {symbol} -&gt; {nextState}
-                                </li>
-                              ))}
-                            </ul>
-                          </li>
-                        )) : ""}
+                        {dfa ? Array.from(dfa.transitions).map(({ state, symbol, nextState }) => 
+                        <li key={Array.from(state).join(",") + symbol + Array.from(nextState)}>
+                                {Array.from(state).join(",")} -{symbol}{"->"} {Array.from(nextState).join(",")}
+                        </li>): ""}
                     </ul>
                 </div>
                 <div className="flex flex-col space-y-2">
