@@ -29,6 +29,18 @@ export interface DFA {
   acceptStates: Set<State>;
 }
 
+function areSetsEqual(set1, set2) {
+  if (set1.size !== set2.size) {
+      return false;
+  }
+  for (let item of set1) {
+      if (!set2.has(item)) {
+          return false;
+      }
+  }
+  return true;
+}
+
 // ε-闭包计算函数，接收一个状态和转换列表，返回通过 ε-转换可以到达的所有状态
 function epsilonClosure(state: State, transitions: Array<NfaTransition>): Set<State> {
   // 用来保存已经找到的状态
@@ -123,8 +135,8 @@ export function nfaToDfa(nfa: NFA): DFA {
 
       // 如果这个新的 DFA 状态非空且还没有被处理过，那么将其加入到队列中
       if (dfaNextStateStr !== '' 
-          && !dfaStates.has(dfaNextStateStr)
-          && !queue.some(s => Array.from(s).join(',') === dfaNextStateStr)) {
+          && !Array.from(dfaStates).some(s => s.split(',').every(state => nextStateSet.has(state)) && nextStateSet.size === s.split(',').length)
+          && !queue.some(s => areSetsEqual(s, nextStateSet))) {
         queue.push(nextStateSet);
         console.log("将"+dfaNextStateStr+"加入到队列中");
       }

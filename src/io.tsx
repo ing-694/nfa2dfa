@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { NFA, DFA } from './nfa2dfa';
 
 interface NFAInputProps {
+    initNfa: NFA | null;
     setNfa: (nfa: NFA) => void;
 }
 
-export const NFAInput: React.FC<NFAInputProps> = ({ setNfa }) => {
+export const NFAInput: React.FC<NFAInputProps> = ({ initNfa, setNfa }) => {
     const [states, setStates] = useState('');
     const [alphabet, setAlphabet] = useState('');
     const [transitions, setTransitions] = useState('');
@@ -36,28 +37,53 @@ export const NFAInput: React.FC<NFAInputProps> = ({ setNfa }) => {
         handleSubmit();
     }, [states, alphabet, transitions, startState, acceptStates]);
 
+    useEffect(() => {
+        if (initNfa) {
+            setStates(Array.from(initNfa.states).join(','));
+            setAlphabet(Array.from(initNfa.alphabet).join(','));
+            setTransitions(initNfa.transitions.map(t => `${t.state},${t.symbol},${t.nextState}`).join('\n'));
+            setStartState(initNfa.startState);
+            setAcceptStates(Array.from(initNfa.acceptStates).join(','));
+        }
+    }, [initNfa]);
+
     return (
         <div className="w-[40%] p-4">
             <div className="flex flex-col space-y-6 bg-gray-200 p-4 rounded text-black">
                 <div className="flex flex-col space-y-2">
                     <label className="text-lg font-bold">States:</label>
-                    <input className="p-2 rounded border border-gray-300 bg-white w-full" placeholder="State1,State2,..." value={states} onChange={e => setStates(e.target.value)} />
+                    <input className="p-2 rounded border border-gray-300 bg-white w-full"
+                        placeholder="State1,State2,..."
+                        value={states}
+                        onChange={e => setStates(e.target.value)} />
                 </div>
                 <div className="flex flex-col space-y-2">
                     <label className="text-lg font-bold">Alphabet:</label>
-                    <input className="p-2 rounded border border-gray-300 bg-white w-full" placeholder="Symbol1,Symbol2,..." value={alphabet} onChange={e => setAlphabet(e.target.value)} />
+                    <input className="p-2 rounded border border-gray-300 bg-white w-full"
+                        placeholder="Symbol1,Symbol2,..."
+                        value={alphabet}
+                        onChange={e => setAlphabet(e.target.value)} />
                 </div>
                 <div className="flex flex-col space-y-2">
-                    <label className="text-lg font-bold">Transitions (one per line):</label>
-                    <textarea className="p-2 rounded border border-gray-300 bg-white w-full h-24" placeholder="State1,Symbol1,State2&#13;&#10;State1,Symbol2,State2&#13;&#10;..." value={transitions} onChange={e => setTransitions(e.target.value)} />
+                    <label className="text-lg font-bold">Transitions (one per line) (Here is a "ε" to copy):</label>
+                    <textarea className="p-2 rounded border border-gray-300 bg-white w-full h-24"
+                        placeholder="State1,Symbol1,State2&#13;&#10;State1,Symbol2,State2&#13;&#10;..."
+                        value={transitions}
+                        onChange={e => setTransitions(e.target.value)} />
                 </div>
                 <div className="flex flex-col space-y-2">
                     <label className="text-lg font-bold">Start state:</label>
-                    <input className="p-2 rounded border border-gray-300 bg-white w-full" placeholder="StartState" value={startState} onChange={e => setStartState(e.target.value)} />
+                    <input className="p-2 rounded border border-gray-300 bg-white w-full"
+                        placeholder="StartState"
+                        value={startState}
+                        onChange={e => setStartState(e.target.value)} />
                 </div>
                 <div className="flex flex-col space-y-2">
                     <label className="text-lg font-bold">Accept states:</label>
-                    <input className="p-2 rounded border border-gray-300 bg-white w-full" placeholder="AcceptState1,AcceptState2,..." value={acceptStates} onChange={e => setAcceptStates(e.target.value)} />
+                    <input className="p-2 rounded border border-gray-300 bg-white w-full"
+                        placeholder="AcceptState1,AcceptState2,..."
+                        value={acceptStates}
+                        onChange={e => setAcceptStates(e.target.value)} />
                 </div>
             </div>
         </div>
@@ -85,12 +111,12 @@ export const DFAOutput: React.FC<DFAOutputProps> = ({ dfa }) => {
                     </ul>
                 </div>
                 <div className="flex flex-col space-y-2">
-                    <h3 className="text-lg font-bold">Transitions:</h3>
+                    <h3 className="text-lg font-bold">Transitions (Equivalent state sets have been merged):</h3>
                     <ul className="flex flex-col justify-center items-center">
-                        {dfa ? Array.from(dfa.transitions).map(({ state, symbol, nextState }) => 
-                        <li key={Array.from(state).join(",") + symbol + Array.from(nextState)}>
+                        {dfa ? Array.from(dfa.transitions).map(({ state, symbol, nextState }) =>
+                            <li key={Array.from(state).join(",") + symbol + Array.from(nextState)}>
                                 {Array.from(state).join(",")} -{symbol}{"->"} {Array.from(nextState).join(",")}
-                        </li>): ""}
+                            </li>) : ""}
                     </ul>
                 </div>
                 <div className="flex flex-col space-y-2">
