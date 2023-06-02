@@ -33,6 +33,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-row w-full h-full justify-center items-center">
+      <div className='fixed left-0 bottom-0 w-[100vw] p-3 text-md opacity-50 z-9999'>Made by LQY, HWX, HJZ & LDJ</div>
       <NFAInput initNfa={defaultNfa} setNfa={setNfa} />
       <div className='flex flex-col gap-2'>
         <button className='m-3' onClick={() => setDefaultNfa(exampleNfa)}>I need an example!!</button>

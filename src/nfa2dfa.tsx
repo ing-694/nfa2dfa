@@ -29,14 +29,15 @@ export interface DFA {
   acceptStates: Set<State>;
 }
 
+// 判断两个集合是否相等
 function areSetsEqual(set1, set2) {
   if (set1.size !== set2.size) {
-      return false;
+    return false;
   }
   for (let item of set1) {
-      if (!set2.has(item)) {
-          return false;
-      }
+    if (!set2.has(item)) {
+      return false;
+    }
   }
   return true;
 }
@@ -65,8 +66,7 @@ function epsilonClosure(state: State, transitions: Array<NfaTransition>): Set<St
       }
     }
   }
-
-  // 返回计算出的 ε-闭包
+  
   return closure;
 }
 
@@ -134,15 +134,17 @@ export function nfaToDfa(nfa: NFA): DFA {
       console.log("当前处理的 NFA 状态集通过符号 " + symbol + " 转换到的 NFA 状态集：", dfaNextStateStr);
 
       // 如果这个新的 DFA 状态非空且还没有被处理过，那么将其加入到队列中
-      if (dfaNextStateStr !== '' 
-          && !Array.from(dfaStates).some(s => s.split(',').every(state => nextStateSet.has(state)) && nextStateSet.size === s.split(',').length)
-          && !queue.some(s => areSetsEqual(s, nextStateSet))) {
+      if (dfaNextStateStr !== ''
+        // 检查在已记录的DFA状态中，是否已经存在相同状态
+        && !Array.from(dfaStates).some(s => s.split(',').every(state => nextStateSet.has(state)) && nextStateSet.size === s.split(',').length)
+        // 检查队列中是否已经存在相同状态（队列中状态可能还未记录至DFA）
+        && !queue.some(s => areSetsEqual(s, nextStateSet))) {
         queue.push(nextStateSet);
-        console.log("将"+dfaNextStateStr+"加入到队列中");
+        console.log("将" + dfaNextStateStr + "加入到队列中");
       }
 
       // 添加从当前 DFA 状态出发，通过当前符号到达新的 DFA 状态的转移
-      if (dfaNextStateStr !== '' && !dfaTransitions.some(t => t.state === nfaStateSet && t.symbol === symbol)){
+      if (dfaNextStateStr !== '' && !dfaTransitions.some(t => t.state === nfaStateSet && t.symbol === symbol)) {
         dfaTransitions.push({
           state: nfaStateSet,
           symbol: symbol,
